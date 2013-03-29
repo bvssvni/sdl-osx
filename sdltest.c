@@ -87,8 +87,8 @@ int LoadTexture(char *file)
 	glGenTextures(1, &TextureID);
 	glBindTexture(GL_TEXTURE_2D, TextureID);
 	
+	// TODO: Swap red with blue color channels.
 	int Mode = GL_RGB;
-	
 	if(Surface->format->BytesPerPixel == 4) {
 		Mode = GL_RGBA;
 	}
@@ -157,6 +157,7 @@ int AddSprite(int texture_id, float x, float y, float w, float h) {
 
 void WriteFloatValue(FILE *f, float val) {
 	// TODO: Consider endian when writing float value.
+	// Don't know if this is necessary yet.
 	fprintf(f, "%f : %x\n", val, *(int*)(void*)&val);
 }
 
