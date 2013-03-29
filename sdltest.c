@@ -34,9 +34,10 @@ exit
 #define DEPTH 32
 #define FULLSCREEN 0	// Set this to 1 to start in full screen.
 
-#define TEXTURES_CAP 1024	// Maximum number of textures.
+#define TEXTURES_CAP 4096	// Maximum number of textures.
 #define SPRITES_CAP 4096	// Maximum number of sprites.
 #define LINE_CAP 1024		// Maximum number of characters per line in file.
+#define DELETED_TEXTURE (~(GLuint)0)
 
 // Array of textures.
 int textures_length;
@@ -98,6 +99,8 @@ int LoadTexture(char *file)
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
 	
+	SDL_FreeSurface(Surface);
+	
 	// Quit application if running out of textures.
 	if (textures_length >= TEXTURES_CAP) {
 		printf("Maximum number of textures reached\n");
@@ -112,9 +115,14 @@ int LoadTexture(char *file)
 	return id;
 }
 
+void DeleteTexture(int texture_id) {
+	glDeleteTextures(1, &textures[texture_id]);
+	textures[texture_id] = DELETED_TEXTURE;
+}
+
 void DrawImageRect(int texture_id, float x, float y, float w, float h) {
-	glEnable (GL_BLEND);
-	glBlendFunc (GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+	glEnable(GL_BLEND);
+	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 	
 	glEnable(GL_TEXTURE_2D);
 	glBindTexture(GL_TEXTURE_2D, textures[texture_id]);
@@ -147,6 +155,10 @@ void DrawImageOffset(int texture_id, float x, float y) {
 
 void DrawSpriteRect(int sprite_id, float x, float y, float w, float h) {
 	int texture_id = sprites_texture_ids[sprite_id];
+	GLuint texture = textures[texture_id];
+	
+	if (texture == DELETED_TEXTURE) return;
+	
 	int tx = sprites_xs[sprite_id];
 	int ty = sprites_ys[sprite_id];
 	int tx2 = sprites_xs2[sprite_id];
@@ -156,7 +168,7 @@ void DrawSpriteRect(int sprite_id, float x, float y, float w, float h) {
 	glBlendFunc (GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 	
 	glEnable(GL_TEXTURE_2D);
-	glBindTexture(GL_TEXTURE_2D, textures[texture_id]);
+	glBindTexture(GL_TEXTURE_2D, texture);
 	
 	glBegin(GL_QUADS);
 	glTexCoord2f(tx, ty); glVertex3f(x, y, 0);
@@ -381,17 +393,18 @@ int main( int argc, char* args[] ) {
 	
 	// Set up textures array.
 	textures_length = 0;
-	textures = malloc(sizeof(GLuint) * TEXTURES_CAP);
-	textures_width = malloc(sizeof(int) * TEXTURES_CAP);
-	textures_height = malloc(sizeof(int) * TEXTURES_CAP);
+	textures = malloc(sizeof(*textures) * TEXTURES_CAP);
+	memset(textures, DELETED_TEXTURE, sizeof(*textures) * TEXTURES_CAP);
+	textures_width = malloc(sizeof(*textures_width) * TEXTURES_CAP);
+	textures_height = malloc(sizeof(*textures_height) * TEXTURES_CAP);
 	
 	// Set up sprites array.
 	sprites_length = 0;
-	sprites_texture_ids = malloc(sizeof(int) * SPRITES_CAP);
-	sprites_xs = malloc(sizeof(int) * SPRITES_CAP);
-	sprites_ys = malloc(sizeof(int) * SPRITES_CAP);
-	sprites_xs2 = malloc(sizeof(int) * SPRITES_CAP);
-	sprites_ys2 = malloc(sizeof(int) * SPRITES_CAP);
+	sprites_texture_ids = malloc(sizeof(*sprites_texture_ids) * SPRITES_CAP);
+	sprites_xs = malloc(sizeof(*sprites_xs) * SPRITES_CAP);
+	sprites_ys = malloc(sizeof(*sprites_ys) * SPRITES_CAP);
+	sprites_xs2 = malloc(sizeof(*sprites_xs2) * SPRITES_CAP);
+	sprites_ys2 = malloc(sizeof(*sprites_ys2) * SPRITES_CAP);
 	
 	if (SDL_Init(SDL_INIT_VIDEO) < 0 ) return 1;
 	
