@@ -32,7 +32,15 @@ exit
 #define DEPTH 32
 #define FULLSCREEN 0	// Set this to 1 to start in full screen.
 
-GLuint face;
+#define TEXTURES_CAP 1024	// Maximum number of textures.
+
+// Array of textures.
+int textures_length;
+GLuint *textures;
+int *textures_width;
+int *textures_height;
+
+int face;
 
 // Sets a single pixel on the screen.
 void screen_SetPixel
@@ -53,7 +61,7 @@ void screen_SetPixel
 
 // Loads texture from file.
 // The directory is relative to the running executable.
-GLuint LoadTexture(char *file)
+int LoadTexture(char *file)
 {
     GLuint TextureID = 0;
 	
@@ -75,16 +83,42 @@ GLuint LoadTexture(char *file)
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
 	
-	return TextureID;
+	// Quit application if running out of textures.
+	if (textures_length >= TEXTURES_CAP) {
+		printf("Maximum number of textures reached\n");
+		exit(1);
+	}
+	
+	int id = textures_length;
+	textures[id] = TextureID;
+	textures_width[id] = Surface->w;
+	textures_height[id] = Surface->h;
+	textures_length++;
+	return id;
 }
 
-void DrawImage(GLuint texture, float x, float y, float w, float h) {
+void DrawImageRect(int texture_id, float x, float y, float w, float h) {
 	glEnable(GL_TEXTURE_2D);
-	glBindTexture(GL_TEXTURE_2D, texture);
+	glBindTexture(GL_TEXTURE_2D, textures[texture_id]);
 	
 	glBegin(GL_QUADS);
 	glTexCoord2f(0, 0); glVertex3f(x, y, 0);
-	glTexCoord2f(1, 0); glVertex3f(x  + w, y, 0);
+	glTexCoord2f(1, 0); glVertex3f(x + w, y, 0);
+	glTexCoord2f(1, 1); glVertex3f(x + w, y + h, 0);
+	glTexCoord2f(0, 1); glVertex3f(x, y + h, 0);
+	glEnd();
+}
+
+void DrawImageOffset(int texture_id, float x, float y) {
+	glEnable(GL_TEXTURE_2D);
+	glBindTexture(GL_TEXTURE_2D, textures[texture_id]);
+	
+	int w = textures_width[texture_id];
+	int h = textures_height[texture_id];
+	
+	glBegin(GL_QUADS);
+	glTexCoord2f(0, 0); glVertex3f(x, y, 0);
+	glTexCoord2f(1, 0); glVertex3f(x + w, y, 0);
 	glTexCoord2f(1, 1); glVertex3f(x + w, y + h, 0);
 	glTexCoord2f(0, 1); glVertex3f(x, y + h, 0);
 	glEnd();
@@ -115,7 +149,7 @@ void DrawScreen(SDL_Surface* screen, const int frame_counter)
 	glEnable(GL_TEXTURE_2D);
 	glBindTexture(GL_TEXTURE_2D, face);
 	
-	DrawImage(face, 0, 0, 100, 100);
+	DrawImageOffset(face, 0, 0);
 	
     SDL_GL_SwapBuffers();
 	
@@ -170,6 +204,12 @@ void SetOpenGLSettings(void) {
 int main( int argc, char* args[] ) {
 	// Start SDL.
 	SDL_Init( SDL_INIT_EVERYTHING );
+	
+	// Set up textures array.
+	textures_length = 0;
+	textures = malloc(sizeof(GLuint) * TEXTURES_CAP);
+	textures_width = malloc(sizeof(int) * TEXTURES_CAP);
+	textures_height = malloc(sizeof(int) * TEXTURES_CAP);
 	
 	if (SDL_Init(SDL_INIT_VIDEO) < 0 ) return 1;
 	
