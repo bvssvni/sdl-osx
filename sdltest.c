@@ -18,6 +18,8 @@ exit
 #endif
 
 #include <assert.h>
+#include <stdio.h>
+#include <stdlib.h>
 #include <string.h>
 #include <math.h>
 #include <gl.h>
@@ -34,6 +36,7 @@ exit
 
 #define TEXTURES_CAP 1024	// Maximum number of textures.
 #define SPRITES_CAP 4096	// Maximum number of sprites.
+#define LINE_CAP 1024		// Maximum number of characters per line in file.
 
 // Array of textures.
 int textures_length;
@@ -52,6 +55,7 @@ float *sprites_ws;
 float *sprites_hs;
 
 int face;
+int test_sprite;
 
 // Sets a single pixel on the screen.
 void screen_SetPixel
@@ -135,10 +139,106 @@ void DrawImageOffset(int texture_id, float x, float y) {
 	glEnd();
 }
 
+int AddSprite(int texture_id, float x, float y, float w, float h) {
+	if (sprites_length >= SPRITES_CAP) {
+		printf("Reached maximum number of sprites");
+		exit(1);
+	}
+	
+	int id = sprites_length;
+	sprites_texture_ids[id] = texture_id;
+	sprites_xs[id] = x;
+	sprites_ys[id] = y;
+	sprites_ws[id] = w;
+	sprites_hs[id] = h;
+	sprites_length++;
+	return id;
+}
+
+void WriteFloatValue(FILE *f, float val) {
+	// TODO: Consider endian when writing float value.
+	fprintf(f, "%f : %x\n", val, *(int*)(void*)&val);
+}
+
+void WriteSpriteToFile(char *file, int sprite_id) {
+	FILE *f;
+	f = fopen(file, "w");
+	fprintf(f, "%s", "Sprite\n");
+	fprintf(f, "%d\n", sprite_id);
+	fprintf(f, "; tex\n");
+	fprintf(f, "%d\n", sprites_texture_ids[sprite_id]);
+	fprintf(f, "; coords\n");
+	WriteFloatValue(f, sprites_xs[sprite_id]);
+	WriteFloatValue(f, sprites_ys[sprite_id]);
+	WriteFloatValue(f, sprites_ws[sprite_id]);
+	WriteFloatValue(f, sprites_hs[sprite_id]);
+	fclose(f);
+}
+
+void ReadIntField(FILE *f, int *arr, int id) {
+	char line[LINE_CAP];
+	while (fgets(line, LINE_CAP, f) != NULL) {
+		if (line[0] == ';') continue;
+		
+		int val = 0;
+		sscanf(line, "%d", &val);
+		arr[id] = val;
+		return;
+	}
+}
+
+void ReadFloatField(FILE *f, float *arr, int id) {
+	// TODO: Check for accurate binary representation.
+	char line[LINE_CAP];
+	while (fgets(line, LINE_CAP, f) != NULL) {
+		if (line[0] == ';') continue;
+		
+		float val = 0;
+		sscanf(line, "%f", &val);
+		arr[id] = val;
+		return;
+	}
+}
+
+int ReadSpriteFromFile(char *file) {
+	FILE *f;
+	f = fopen(file, "r");
+	int sprite_id = -1;
+	float x = 0;
+	float y = 0;
+	float w = 0;
+	float h = 0;
+	
+	// TODO: Create function for reading object type and id.
+	char line[LINE_CAP];
+	fgets(line, LINE_CAP, f);
+	if (strcmp(line, "Sprite\n") != 0) {
+		printf("Expected 'Sprite' at first line %s\n", file);
+		exit(1);
+	}
+	
+	fgets(line, LINE_CAP, f);
+	sscanf(line, "%d", &sprite_id);
+	
+	ReadIntField(f, sprites_texture_ids, sprite_id);
+	ReadFloatField(f, sprites_xs, sprite_id);
+	ReadFloatField(f, sprites_ys, sprite_id);
+	ReadFloatField(f, sprites_ws, sprite_id);
+	ReadFloatField(f, sprites_hs, sprite_id);
+	
+	fclose(f);
+	
+	return sprite_id;
+}
+
 void Load(void)
 {
 	// Do loading code here.
 	face = LoadTexture("face.png");
+	
+	// int testSprite = AddSprite(face, 0, 0, 1, 1);
+	// WriteSpriteToFile("test.txt", testSprite);
+	test_sprite = ReadSpriteFromFile("test.txt");
 }
 
 void Unload(void)
