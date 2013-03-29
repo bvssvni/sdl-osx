@@ -3,10 +3,12 @@
 APP_NAME="sdltest"
 gcc -o bin/$APP_NAME \
 -I/Library/Frameworks/SDL.framework/Headers \
+-I/Library/Frameworks/SDL_image.framework/Headers \
 -I/System/Library/Frameworks/OpenGL.framework/Headers \
 $APP_NAME.c \
 SDLmain.m \
 -framework SDL \
+-framework SDL_image \
 -framework Cocoa \
 -framework OpenGL
 if [ "$?" = "0" ]; then
@@ -18,6 +20,10 @@ exit
 #include <assert.h>
 #include <string.h>
 #include <math.h>
+#include <gl.h>
+#include <glu.h>
+#include <assert.h>
+#include "SDL_image.h"
 #include "SDL/SDL.h"
 
 #define WIDTH 640
@@ -25,6 +31,8 @@ exit
 #define BYTES_PER_PIXEL 4
 #define DEPTH 32
 #define FULLSCREEN 0	// Set this to 1 to start in full screen.
+
+GLuint face;
 
 // Sets a single pixel on the screen.
 void screen_SetPixel
@@ -43,21 +51,49 @@ void screen_SetPixel
     *pixmem32 = colour;
 }
 
-// Displays some colors on the screen as a demo.
-void demo_ShowSomeColors(SDL_Surface *screen, int frame_counter) {
-	const int f = frame_counter;
-	int x, y;
-    for (y = 0; y < screen->h; y++) {
-        for(x = 0; x < screen->w; x++) {
-            screen_SetPixel
-			(screen, x, y, (x*x)/256+3*y+f, (y*y)/256+x+f, f);
-        }
-    }
+// Loads texture from file.
+// The directory is relative to the running executable.
+GLuint LoadTexture(char *file)
+{
+    GLuint TextureID = 0;
+	
+	SDL_Surface* Surface = IMG_Load(file);
+	
+	assert(Surface != NULL);
+	
+	glGenTextures(1, &TextureID);
+	glBindTexture(GL_TEXTURE_2D, TextureID);
+	
+	int Mode = GL_RGB;
+	
+	if(Surface->format->BytesPerPixel == 4) {
+		Mode = GL_RGBA;
+	}
+	
+	glTexImage2D(GL_TEXTURE_2D, 0, Mode, Surface->w, Surface->h, 0, Mode, GL_UNSIGNED_BYTE, Surface->pixels);
+	
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+	
+	return TextureID;
+}
+
+void DrawImage(GLuint texture, float x, float y, float w, float h) {
+	glEnable(GL_TEXTURE_2D);
+	glBindTexture(GL_TEXTURE_2D, texture);
+	
+	glBegin(GL_QUADS);
+	glTexCoord2f(0, 0); glVertex3f(x, y, 0);
+	glTexCoord2f(1, 0); glVertex3f(x  + w, y, 0);
+	glTexCoord2f(1, 1); glVertex3f(x + w, y + h, 0);
+	glTexCoord2f(0, 1); glVertex3f(x, y + h, 0);
+	glEnd();
 }
 
 void Load(void)
 {
 	// Do loading code here.
+	face = LoadTexture("face.png");
 }
 
 void Unload(void)
@@ -73,13 +109,62 @@ void DrawScreen(SDL_Surface* screen, const int frame_counter)
     }
 	
 	// Add drawing code here.
-	demo_ShowSomeColors(screen, frame_counter);
+	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+    glLoadIdentity();
+	
+	glEnable(GL_TEXTURE_2D);
+	glBindTexture(GL_TEXTURE_2D, face);
+	
+	DrawImage(face, 0, 0, 100, 100);
+	
+    SDL_GL_SwapBuffers();
 	
     if(SDL_MUSTLOCK(screen)) {
 		SDL_UnlockSurface(screen);
 	}
 	
     SDL_Flip(screen);
+}
+
+void SetOpenGLSettings(void) {
+	SDL_GL_SetAttribute(SDL_GL_RED_SIZE,        8);
+	SDL_GL_SetAttribute(SDL_GL_GREEN_SIZE,      8);
+	SDL_GL_SetAttribute(SDL_GL_BLUE_SIZE,       8);
+	SDL_GL_SetAttribute(SDL_GL_ALPHA_SIZE,      8);
+	
+	SDL_GL_SetAttribute(SDL_GL_DEPTH_SIZE,      16);
+	SDL_GL_SetAttribute(SDL_GL_BUFFER_SIZE,        32);
+	
+	SDL_GL_SetAttribute(SDL_GL_ACCUM_RED_SIZE,    8);
+	SDL_GL_SetAttribute(SDL_GL_ACCUM_GREEN_SIZE,    8);
+	SDL_GL_SetAttribute(SDL_GL_ACCUM_BLUE_SIZE,    8);
+	SDL_GL_SetAttribute(SDL_GL_ACCUM_ALPHA_SIZE,    8);
+	
+	SDL_GL_SetAttribute(SDL_GL_MULTISAMPLEBUFFERS,  1);
+	SDL_GL_SetAttribute(SDL_GL_MULTISAMPLESAMPLES,  2);
+	
+	glClearColor(0, 0, 0, 0);
+	glClearDepth(1.0f);
+	
+	GLint viewport_x = 0;
+	GLint viewport_y = 0;
+	GLsizei viewport_width = 640;
+	GLsizei viewport_height = 480;
+	glViewport(viewport_x,
+			   viewport_y,
+			   viewport_width,
+			   viewport_height);
+	
+	glMatrixMode(GL_PROJECTION);
+	glLoadIdentity();
+	
+	glOrtho(0, 640, 480, 0, 1, -1);
+	
+	glMatrixMode(GL_MODELVIEW);
+	
+	glEnable(GL_TEXTURE_2D);
+	
+	glLoadIdentity();
 }
 
 int main( int argc, char* args[] ) {
@@ -90,12 +175,14 @@ int main( int argc, char* args[] ) {
 	
 	SDL_Surface *screen = NULL;
 	screen = FULLSCREEN
-	? SDL_SetVideoMode(WIDTH, HEIGHT, DEPTH, SDL_FULLSCREEN|SDL_HWSURFACE)
-	: SDL_SetVideoMode(WIDTH, HEIGHT, DEPTH, SDL_HWSURFACE);
+	? SDL_SetVideoMode(WIDTH, HEIGHT, DEPTH, SDL_FULLSCREEN | SDL_HWSURFACE | SDL_GL_DOUBLEBUFFER | SDL_OPENGL)
+	: SDL_SetVideoMode(WIDTH, HEIGHT, DEPTH, SDL_HWSURFACE | SDL_GL_DOUBLEBUFFER | SDL_OPENGL);
     if (!screen) {
         SDL_Quit();
         return 1;
     }
+	
+	SetOpenGLSettings();
 	
 	Load();
 	
