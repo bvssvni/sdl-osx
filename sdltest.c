@@ -85,10 +85,17 @@ int LoadTexture(char *file)
 	
 	assert(Surface != NULL);
 	
+	// Convert format if necessary.
+    if (Surface->format->BitsPerPixel == 24 || Surface->format->Rshift > Surface->format->Bshift){
+		SDL_PixelFormat format = {NULL, 32, 4, 0, 0, 0, 0, 0, 8, 16, 24, 0x000000FF, 0x0000FF00, 0x00FF0000, 0xFF000000, 0, 255};
+		SDL_Surface *temp = SDL_ConvertSurface(Surface, &format, SDL_SWSURFACE);
+		SDL_FreeSurface(Surface);
+		Surface = temp;
+	}
+	
 	glGenTextures(1, &TextureID);
 	glBindTexture(GL_TEXTURE_2D, TextureID);
 	
-	// TODO: Swap red with blue color channels.
 	int Mode = GL_RGB;
 	if(Surface->format->BytesPerPixel == 4) {
 		Mode = GL_RGBA;
