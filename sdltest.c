@@ -161,14 +161,18 @@ void WriteFloatValue(FILE *f, float val) {
 	fprintf(f, "%f : %x\n", val, *(int*)(void*)&val);
 }
 
+void WriteComment(FILE *f, char const *comment) {
+	fprintf(f, "; %s\n", comment);
+}
+
 void WriteSpriteToFile(char *file, int sprite_id) {
 	FILE *f;
 	f = fopen(file, "w");
 	fprintf(f, "%s", "Sprite\n");
 	fprintf(f, "%d\n", sprite_id);
-	fprintf(f, "; tex\n");
+	WriteComment(f, "text");
 	fprintf(f, "%d\n", sprites_texture_ids[sprite_id]);
-	fprintf(f, "; coords\n");
+	WriteComment(f, "coords");
 	WriteFloatValue(f, sprites_xs[sprite_id]);
 	WriteFloatValue(f, sprites_ys[sprite_id]);
 	WriteFloatValue(f, sprites_ws[sprite_id]);
