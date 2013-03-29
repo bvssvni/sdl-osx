@@ -51,8 +51,8 @@ int sprites_length;
 int *sprites_texture_ids;
 float *sprites_xs;
 float *sprites_ys;
-float *sprites_ws;
-float *sprites_hs;
+float *sprites_xs2;
+float *sprites_ys2;
 
 int face;
 int test_sprite;
@@ -139,6 +139,44 @@ void DrawImageOffset(int texture_id, float x, float y) {
 	glEnd();
 }
 
+void DrawSpriteRect(int sprite_id, float x, float y, float w, float h) {
+	int texture_id = sprites_texture_ids[sprite_id];
+	int tx = sprites_xs[sprite_id];
+	int ty = sprites_ys[sprite_id];
+	int tx2 = sprites_xs2[sprite_id];
+	int ty2 = sprites_ys2[sprite_id];
+	
+	glEnable(GL_TEXTURE_2D);
+	glBindTexture(GL_TEXTURE_2D, textures[texture_id]);
+	
+	glBegin(GL_QUADS);
+	glTexCoord2f(tx, ty); glVertex3f(x, y, 0);
+	glTexCoord2f(tx2, ty); glVertex3f(x + w, y, 0);
+	glTexCoord2f(tx2, ty2); glVertex3f(x + w, y + h, 0);
+	glTexCoord2f(tx, ty2); glVertex3f(x, y + h, 0);
+	glEnd();
+}
+
+void DrawSpriteOffset(int sprite_id, float x, float y) {
+	int texture_id = sprites_texture_ids[sprite_id];
+	int w = textures_width[texture_id];
+	int h = textures_height[texture_id];
+	int tx = sprites_xs[sprite_id];
+	int ty = sprites_ys[sprite_id];
+	int tx2 = sprites_xs2[sprite_id];
+	int ty2 = sprites_ys2[sprite_id];
+	
+	glEnable(GL_TEXTURE_2D);
+	glBindTexture(GL_TEXTURE_2D, textures[texture_id]);
+	
+	glBegin(GL_QUADS);
+	glTexCoord2f(tx, ty); glVertex3f(x, y, 0);
+	glTexCoord2f(tx2, ty); glVertex3f(x + w, y, 0);
+	glTexCoord2f(tx2, ty2); glVertex3f(x + w, y + h, 0);
+	glTexCoord2f(tx, ty2); glVertex3f(x, y + h, 0);
+	glEnd();
+}
+
 int AddSprite(int texture_id, float x, float y, float w, float h) {
 	if (sprites_length >= SPRITES_CAP) {
 		printf("Reached maximum number of sprites");
@@ -149,8 +187,8 @@ int AddSprite(int texture_id, float x, float y, float w, float h) {
 	sprites_texture_ids[id] = texture_id;
 	sprites_xs[id] = x;
 	sprites_ys[id] = y;
-	sprites_ws[id] = w;
-	sprites_hs[id] = h;
+	sprites_xs2[id] = x + w;
+	sprites_ys2[id] = y + h;
 	sprites_length++;
 	return id;
 }
@@ -175,8 +213,8 @@ void WriteSpriteToFile(char *file, int sprite_id) {
 	WriteComment(f, "coords");
 	WriteFloatValue(f, sprites_xs[sprite_id]);
 	WriteFloatValue(f, sprites_ys[sprite_id]);
-	WriteFloatValue(f, sprites_ws[sprite_id]);
-	WriteFloatValue(f, sprites_hs[sprite_id]);
+	WriteFloatValue(f, sprites_xs2[sprite_id]);
+	WriteFloatValue(f, sprites_ys2[sprite_id]);
 	fclose(f);
 }
 
@@ -240,8 +278,8 @@ int ReadSpriteFromFile(char *file) {
 	ReadIntField(f, sprites_texture_ids, sprite_id);
 	ReadFloatField(f, sprites_xs, sprite_id);
 	ReadFloatField(f, sprites_ys, sprite_id);
-	ReadFloatField(f, sprites_ws, sprite_id);
-	ReadFloatField(f, sprites_hs, sprite_id);
+	ReadFloatField(f, sprites_xs2, sprite_id);
+	ReadFloatField(f, sprites_ys2, sprite_id);
 	
 	fclose(f);
 	
@@ -274,10 +312,9 @@ void DrawScreen(SDL_Surface* screen, const int frame_counter)
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
     glLoadIdentity();
 	
-	glEnable(GL_TEXTURE_2D);
-	glBindTexture(GL_TEXTURE_2D, face);
-	
-	DrawImageOffset(face, 0, 0);
+	// DrawImageOffset(face, 0, 0);
+	// DrawSpriteOffset(test_sprite, 0, 0);
+	DrawSpriteRect(test_sprite, 0, 0, 10, 10);
 	
     SDL_GL_SwapBuffers();
 	
@@ -344,8 +381,8 @@ int main( int argc, char* args[] ) {
 	sprites_texture_ids = malloc(sizeof(int) * SPRITES_CAP);
 	sprites_xs = malloc(sizeof(int) * SPRITES_CAP);
 	sprites_ys = malloc(sizeof(int) * SPRITES_CAP);
-	sprites_ws = malloc(sizeof(int) * SPRITES_CAP);
-	sprites_hs = malloc(sizeof(int) * SPRITES_CAP);
+	sprites_xs2 = malloc(sizeof(int) * SPRITES_CAP);
+	sprites_ys2 = malloc(sizeof(int) * SPRITES_CAP);
 	
 	if (SDL_Init(SDL_INIT_VIDEO) < 0 ) return 1;
 	
