@@ -113,6 +113,9 @@ int LoadTexture(char *file)
 }
 
 void DrawImageRect(int texture_id, float x, float y, float w, float h) {
+	glEnable (GL_BLEND);
+	glBlendFunc (GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+	
 	glEnable(GL_TEXTURE_2D);
 	glBindTexture(GL_TEXTURE_2D, textures[texture_id]);
 	
@@ -125,11 +128,14 @@ void DrawImageRect(int texture_id, float x, float y, float w, float h) {
 }
 
 void DrawImageOffset(int texture_id, float x, float y) {
-	glEnable(GL_TEXTURE_2D);
-	glBindTexture(GL_TEXTURE_2D, textures[texture_id]);
-	
 	int w = textures_width[texture_id];
 	int h = textures_height[texture_id];
+	
+	glEnable (GL_BLEND);
+	glBlendFunc (GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+	
+	glEnable(GL_TEXTURE_2D);
+	glBindTexture(GL_TEXTURE_2D, textures[texture_id]);
 	
 	glBegin(GL_QUADS);
 	glTexCoord2f(0, 0); glVertex3f(x, y, 0);
@@ -145,6 +151,9 @@ void DrawSpriteRect(int sprite_id, float x, float y, float w, float h) {
 	int ty = sprites_ys[sprite_id];
 	int tx2 = sprites_xs2[sprite_id];
 	int ty2 = sprites_ys2[sprite_id];
+	
+	glEnable (GL_BLEND);
+	glBlendFunc (GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 	
 	glEnable(GL_TEXTURE_2D);
 	glBindTexture(GL_TEXTURE_2D, textures[texture_id]);
@@ -314,7 +323,7 @@ void DrawScreen(SDL_Surface* screen, const int frame_counter)
 	
 	// DrawImageOffset(face, 0, 0);
 	// DrawSpriteOffset(test_sprite, 0, 0);
-	DrawSpriteRect(test_sprite, 0, 0, 10, 10);
+	DrawSpriteRect(test_sprite, 0, 0, 100, 100);
 	
     SDL_GL_SwapBuffers();
 	
