@@ -200,25 +200,37 @@ void ReadFloatField(FILE *f, float *arr, int id) {
 	}
 }
 
-int ReadSpriteFromFile(char *file) {
-	FILE *f;
-	f = fopen(file, "r");
-	int sprite_id = -1;
-	float x = 0;
-	float y = 0;
-	float w = 0;
-	float h = 0;
-	
-	// TODO: Create function for reading object type and id.
+int ReadId(char *file, FILE *f, char *obj) {
 	char line[LINE_CAP];
 	fgets(line, LINE_CAP, f);
-	if (strcmp(line, "Sprite\n") != 0) {
+	int correct_object = 1;
+	int i;
+	for (i = 0; obj[i] != '\0' && line[i] != '\0'; i++) {
+		if (obj[i] != line[i]) {
+			correct_object = 0;
+		}
+	}
+	
+	if (!correct_object) {
 		printf("Expected 'Sprite' at first line %s\n", file);
 		exit(1);
 	}
 	
+	int id;
 	fgets(line, LINE_CAP, f);
-	sscanf(line, "%d", &sprite_id);
+	sscanf(line, "%d", &id);
+	
+	return id;
+}
+
+int ReadSpriteFromFile(char *file) {
+	FILE *f;
+	f = fopen(file, "r");
+	int sprite_id = ReadId(file, f, "Sprite");
+	float x = 0;
+	float y = 0;
+	float w = 0;
+	float h = 0;
 	
 	ReadIntField(f, sprites_texture_ids, sprite_id);
 	ReadFloatField(f, sprites_xs, sprite_id);
