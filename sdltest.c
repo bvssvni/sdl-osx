@@ -33,12 +33,23 @@ exit
 #define FULLSCREEN 0	// Set this to 1 to start in full screen.
 
 #define TEXTURES_CAP 1024	// Maximum number of textures.
+#define SPRITES_CAP 4096	// Maximum number of sprites.
 
 // Array of textures.
 int textures_length;
 GLuint *textures;
 int *textures_width;
 int *textures_height;
+
+// Array of sprites.
+// A sprite is a specific rectangle of any texture.
+// The coordinates goes from 0 to 1.
+int sprites_length;
+int *sprites_texture_ids;
+float *sprites_xs;
+float *sprites_ys;
+float *sprites_ws;
+float *sprites_hs;
 
 int face;
 
@@ -210,6 +221,14 @@ int main( int argc, char* args[] ) {
 	textures = malloc(sizeof(GLuint) * TEXTURES_CAP);
 	textures_width = malloc(sizeof(int) * TEXTURES_CAP);
 	textures_height = malloc(sizeof(int) * TEXTURES_CAP);
+	
+	// Set up sprites array.
+	sprites_length = 0;
+	sprites_texture_ids = malloc(sizeof(int) * SPRITES_CAP);
+	sprites_xs = malloc(sizeof(int) * SPRITES_CAP);
+	sprites_ys = malloc(sizeof(int) * SPRITES_CAP);
+	sprites_ws = malloc(sizeof(int) * SPRITES_CAP);
+	sprites_hs = malloc(sizeof(int) * SPRITES_CAP);
 	
 	if (SDL_Init(SDL_INIT_VIDEO) < 0 ) return 1;
 	
